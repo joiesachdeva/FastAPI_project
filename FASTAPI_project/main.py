@@ -1,18 +1,52 @@
-from fastapi import FastAPI
+from typing import Optional
+from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
+from pydantic import BaseModel
+from typing import Optional
+from random import randrange
 
 app = FastAPI()
+
+class Post(BaseModel):
+    title: str
+    content: str 
+    published: bool = True
+    rating: Optional[int] = None
+
+my_posts = [{"title": "title of post 1", "content": "content of post 1", "id": 1}, {"title": "fav food", "content": "pasta lover", "id": 2}]
+
+def find_post(id):
+    for p in my_posts:
+        if p["id"] == id: 
+            return p
 
 
 @app.get("/")
 async def root():
-    return {"message":"welcome to my API"}
+    return {"data":"welcome to my API"}
 
 @app.get("/posts")
 def get_posts():
-    return {"Data": "This is your posts"}
+    return {"Data": my_posts}
 
-@app.post("/createposts")
-def create_posts(payLoad: dict = Body(...)):
-    print(payLoad)
-    return {"new_post": f"title {payLoad['title']} content: {payLoad['content']}"}
+
+@app.post("/posts")
+def create_posts(post: Post):
+    post_dict = post.dict()
+    post_dict['id']= randrange(0, 10000000)
+    my_posts.append(post_dict)
+    return {"data": post_dict}
+
+
+@app.get("/posts/{id}")
+def get_post(id: int):
+    post_f = find_post(id) 
+    if not post_f:
+        #response.status_code = status.HTTP_404_NOT_FOUND
+        #return {"message": f"post with ide: {id} not found "}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"post with ide: {id} not found")
+    return {"post detail": post_f}
+
+
+# title str, content str: basically how we want our content to be 
